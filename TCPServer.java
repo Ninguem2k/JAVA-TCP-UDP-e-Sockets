@@ -1,57 +1,77 @@
 import java.net.*;
+import java.util.Scanner;
 import java.io.*;
 
 public class TCPServer {
-	public static void main(String args[]) {
-		try {
-			int serverPort = 7896; // the server port
-			try (ServerSocket listenSocket = new ServerSocket(serverPort)) {
-				while (true) {
-					System.out.println("Aguardando solicitação");
-					Socket clientSocket = listenSocket.accept();
-					System.out.println("Cliente concectado:");
-					Connection c = new Connection(clientSocket);
-				}
-			}
-		} catch (IOException e) {
-			System.out.println("Listen socket:" + e.getMessage());
-		}
-	}
+    public static void main(String args[]) {
+        try {
+            // define em qual porta vai receber as informações
+            int serverPort = 7999;
+            // seta a porta no qual vai ser usada gerando um objeto que captura oq esta
+            // sendo enviado naquela porta
+            try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
+                // entra em um loop infinito aguardando informação
+                while (true) {
+                    // System.out.println("Aguardando Cliente");
+                    Socket clientSocket = serverSocket.accept();
+                    // System.out.println("Cliente " + clientSocket.getInetAddress() + " se
+                    // conectou");
+                    Connection connection = new Connection(clientSocket);
+                    // System.out.println("connection:" + connection);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Erro of Connection: " + e.getMessage());
+        }
+    }
 }
 
 class Connection extends Thread {
-	DataInputStream in;
-	DataOutputStream out;
-	Socket clientSocket;
+    DataInputStream input;
+    DataOutputStream output;
+    Socket clientSocket;
 
-	public Connection(Socket aClientSocket) {
-		try {
-			clientSocket = aClientSocket;
-			in = new DataInputStream(clientSocket.getInputStream());
-			out = new DataOutputStream(clientSocket.getOutputStream());
-			this.start();
-		} catch (IOException e) {
-			System.out.println("Connection:" + e.getMessage());
-		}
-	}
+    public Connection(Socket NewClientSocket) {
+        try {
+            clientSocket = NewClientSocket;
+            // pega inforção enviada para porta
+            input = new DataInputStream(clientSocket.getInputStream());
+            // System.out.println("input user: " + input);
+            // retorna a inforção enviada para porta
+            output = new DataOutputStream(clientSocket.getOutputStream());
+            // System.out.println("output user: " + output);
+            // inicia uma nova thread
+            this.start();
+        } catch (IOException e) {
+            System.out.println("Connection:" + e.getMessage());
+        }
+    }
 
-	public void run() {
-		try { // an echo server
-			System.out.println("lendo os dados do client");
-			String data = in.readUTF(); // read a line of data from the stream
-			System.out.println("Mensagem = " + data);
-			System.out.println("enviando os dados do client");
-			out.writeUTF(data);
-		} catch (EOFException e) {
-			System.out.println("EOF:" + e.getMessage());
-		} catch (IOException e) {
-			System.out.println("readline:" + e.getMessage());
-		} finally {
-			try {
-				clientSocket.close();
-			} catch (IOException e) {
-				/* close failed */}
-		}
+    public void run() {
+        try (Scanner useriput = new Scanner(System.in)) {
+            String msg = null;
+            try {
+                // pega os dados para mostrar pro server
+                String data = input.readUTF();
+                System.out.println("Mensagem recebida: " + data);
+                // System.out.println("remetente:" + clientSocket.getInetAddress());
+                System.out.print("Escreva sua Mensagem: ");
+                 msg = useriput.next();
+                // retorna infor para cliente
+                output.writeUTF(msg);
+                // System.out.println("_________________________________________________________");
 
-	}
+            } catch (EOFException e) {
+                System.out.println("EOF:" + e.getMessage());
+            } catch (IOException e) {
+                System.out.println("readline:" + e.getMessage());
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    /* close failed */}
+            }
+        }
+
+    }
 }
